@@ -3,12 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Risk Calculator - Bonaven</title>
+    <title>Bonaven Risk Calculator</title>
     
     <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
     <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Konfigurasi Tailwind untuk manual Dark Mode -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,26 +24,37 @@
     <style>
         body { 
             font-family: 'Inter', sans-serif; 
+            background-color: #ffffff; /* Light theme default */
+            color: #111827; 
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        .dark body {
             background-color: #050505; 
             color: #ededed; 
-            min-height: 100vh;
         }
         
         .label-text { 
             display: block; 
             font-size: 0.65rem; 
-            color: #737373; 
+            color: #6b7280; /* Light theme label */
             margin-bottom: 0.5rem; 
             text-transform: uppercase; 
             letter-spacing: 0.1em; 
-            font-weight: 500; 
+            font-weight: 600; 
+        }
+
+        .dark .label-text {
+            color: #737373;
         }
         
         .input-minimal { 
             width: 100%; 
             background-color: transparent; 
-            border: 1px solid #262626; 
-            color: #fff; 
+            border: 1px solid #e5e7eb; /* Light theme border */
+            color: #111827; /* Light theme text */
             padding: 0.75rem 0; 
             border-radius: 0; 
             border-top: none;
@@ -47,16 +65,29 @@
             transition: border-color 0.2s;
             font-size: 1rem;
         }
-        
-        .input-minimal:focus { 
-            border-bottom-color: #a38c52; 
+
+        .dark .input-minimal {
+            border-color: #262626;
+            color: #fff;
         }
+        
+        .input-minimal:focus { border-bottom-color: #a38c52; }
+        .dark .input-minimal:focus { border-bottom-color: #a38c52; }
 
         select.input-minimal {
             appearance: none;
             cursor: pointer;
-            border: 1px solid #262626;
+            border: 1px solid #e5e7eb;
             padding: 0.75rem 1rem;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+        }
+
+        .dark select.input-minimal { 
+            border-color: #262626; 
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23737373' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
         }
         select.input-minimal:focus { border-color: #a38c52; }
         
@@ -68,15 +99,22 @@
             font-size: 0.75rem; 
             letter-spacing: 0.05em;
             transition: all 0.2s; 
-            border: 1px solid #262626;
+            border: 1px solid #e5e7eb;
         }
+
+        .dark .btn-minimal { border-color: #262626; }
         
-        .btn-minimal.active { background: #fff; color: #000; border-color: #fff; }
-        .btn-minimal.inactive { color: #737373; background: transparent; }
-        .btn-minimal.inactive:hover { color: #d4d4d4; }
+        .btn-minimal.active { background: #111827; color: #fff; border-color: #111827; font-weight: 500;}
+        .dark .btn-minimal.active { background: #fff; color: #000; border-color: #fff; }
+        
+        .btn-minimal.inactive { color: #6b7280; background: transparent; }
+        .btn-minimal.inactive:hover { color: #111827; }
+        
+        .dark .btn-minimal.inactive { color: #737373; background: transparent; }
+        .dark .btn-minimal.inactive:hover { color: #d4d4d4; }
     </style>
 </head>
-<body class="antialiased selection:bg-neutral-800 selection:text-white">
+<body class="antialiased selection:bg-neutral-200 dark:selection:bg-neutral-800 selection:text-black dark:selection:text-white">
     <div id="root"></div>
 
     <script type="text/babel" data-presets="react">
@@ -90,10 +128,12 @@
         ];
 
         const App = () => {
+            // Theme State (Default Light)
+            const [isDark, setIsDark] = useState(false);
+
             const [symbolIndex, setSymbolIndex] = useState(0); 
             const [position, setPosition] = useState('LONG');
             
-            // State dikosongkan ("") agar tidak ada angka yang perlu dihapus manual
             const [balance, setBalance] = useState("");
             const [riskPercent, setRiskPercent] = useState("1"); 
             const [entryPrice, setEntryPrice] = useState("");
@@ -112,13 +152,30 @@
                 isValid: true
             });
 
+            // Effect untuk mengubah class 'dark' di elemen HTML (Tailwind Setup)
+            useEffect(() => {
+                if (isDark) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            }, [isDark]);
+
             const fmtMoney = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+
+            // Fungsi SUPER STRICT: Hanya izinkan angka dan MAKSIMAL SATU TITIK desimal
+            const handleStrictNumber = (setter) => (e) => {
+                const val = e.target.value;
+                // Regex: Boleh kosong, ATAU hanya angka dengan opsional 1 titik
+                if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                    setter(val);
+                }
+            };
             
             useEffect(() => {
                 const currentSymbol = SYMBOLS[symbolIndex];
                 const { type, pipSize, contractSize } = currentSymbol;
                 
-                // Konversi aman (jika kosong, bernilai 0)
                 const numBalance = parseFloat(balance) || 0;
                 const numRisk = parseFloat(riskPercent) || 0;
                 const numEntry = parseFloat(entryPrice) || 0;
@@ -165,14 +222,43 @@
             }, [symbolIndex, balance, riskPercent, position, entryPrice, stopLoss, takeProfit]);
 
             return (
-                <div className="min-h-screen flex items-center justify-center p-4">
+                // min-h-screen, items-center, justify-center memastikan konten selalu nengah secara vertikal & horizontal
+                <div className="min-h-screen w-full flex items-center justify-center p-4 md:p-8 transition-colors">
                     <div className="w-full max-w-4xl flex flex-col md:flex-row gap-12 md:gap-24">
                         
                         {/* INPUT SECTION */}
                         <div className="flex-1 space-y-8">
-                            <div className="mb-10">
-                                <h1 className="text-xl font-light tracking-wide text-white mb-1">Risk Calculator</h1>
-                                <div className="h-[1px] w-12 bg-neutral-700"></div>
+                            
+                            <div className="flex justify-between items-start mb-10">
+                                <div>
+                                    <h1 className="text-xl font-light tracking-wide text-gray-900 dark:text-white mb-1">Bonaven Risk Calculator</h1>
+                                    <div className="h-[1px] w-12 bg-gray-300 dark:bg-neutral-700"></div>
+                                </div>
+                                
+                                {/* Theme Toggle Button */}
+                                <button 
+                                    onClick={() => setIsDark(!isDark)}
+                                    className="flex items-center justify-center p-2 rounded-full border border-gray-200 dark:border-neutral-800 text-gray-500 hover:text-gray-900 dark:text-neutral-400 dark:hover:text-white transition-all bg-gray-50 dark:bg-neutral-900"
+                                    title="Toggle Dark Mode"
+                                >
+                                    {isDark ? (
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <circle cx="12" cy="12" r="5"></circle>
+                                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                                        </svg>
+                                    ) : (
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                                        </svg>
+                                    )}
+                                </button>
                             </div>
 
                             <div className="flex gap-2">
@@ -183,35 +269,35 @@
                             <div>
                                 <label className="label-text">Symbol/Pair</label>
                                 <select className="input-minimal w-full" value={symbolIndex} onChange={(e) => setSymbolIndex(Number(e.target.value))}>
-                                    {SYMBOLS.map((s, i) => (<option key={i} value={i} className="bg-black">{s.name}</option>))}
+                                    {SYMBOLS.map((s, i) => (<option key={i} value={i} className="bg-white text-black dark:bg-black dark:text-white">{s.name}</option>))}
                                 </select>
                             </div>
 
                             <div className="grid grid-cols-2 gap-8">
                                 <div>
                                     <label className="label-text">Balance</label>
-                                    <input type="number" className="input-minimal" placeholder="0" value={balance} onChange={e => setBalance(e.target.value)} />
+                                    <input type="text" inputMode="decimal" className="input-minimal" placeholder="0" value={balance} onChange={handleStrictNumber(setBalance)} />
                                 </div>
                                 <div>
                                     <label className="label-text">Risk (%)</label>
-                                    <input type="number" step="0.1" className="input-minimal" placeholder="0" value={riskPercent} onChange={e => setRiskPercent(e.target.value)} />
+                                    <input type="text" inputMode="decimal" className="input-minimal" placeholder="0" value={riskPercent} onChange={handleStrictNumber(setRiskPercent)} />
                                 </div>
                             </div>
 
                             <div className="pt-4 space-y-6">
                                 <div>
                                     <label className="label-text">Entry Price</label>
-                                    <input type="number" className="input-minimal" step="any" placeholder="0.00" value={entryPrice} onChange={e => setEntryPrice(e.target.value)} />
+                                    <input type="text" inputMode="decimal" className="input-minimal" placeholder="0.00" value={entryPrice} onChange={handleStrictNumber(setEntryPrice)} />
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-8">
                                     <div>
                                         <label className="label-text">Stop Loss</label>
-                                        <input type="number" className="input-minimal" step="any" placeholder="0.00" value={stopLoss} onChange={e => setStopLoss(e.target.value)} />
+                                        <input type="text" inputMode="decimal" className="input-minimal" placeholder="0.00" value={stopLoss} onChange={handleStrictNumber(setStopLoss)} />
                                     </div>
                                     <div>
                                         <label className="label-text">Take Profit</label>
-                                        <input type="number" className="input-minimal" step="any" placeholder="0.00" value={takeProfit} onChange={e => setTakeProfit(e.target.value)} />
+                                        <input type="text" inputMode="decimal" className="input-minimal" placeholder="0.00" value={takeProfit} onChange={handleStrictNumber(setTakeProfit)} />
                                     </div>
                                 </div>
                             </div>
@@ -225,10 +311,10 @@
 
                         {/* RESULT SECTION */}
                         <div className="flex-1 flex flex-col justify-center">
-                            <div className="border border-neutral-800 p-8 md:p-12">
+                            <div className="border border-gray-200 dark:border-neutral-800 bg-gray-50/50 dark:bg-transparent p-8 md:p-12 rounded-xl md:rounded-none transition-colors">
                                 <div className="mb-12">
                                     <p className="label-text">Recommended Lots</p>
-                                    <p className="text-6xl md:text-7xl font-light tracking-tighter text-white">
+                                    <p className="text-6xl md:text-7xl font-light tracking-tighter text-gray-900 dark:text-white transition-colors">
                                         {results.lots.toFixed(2)}
                                     </p>
                                 </div>
@@ -236,34 +322,34 @@
                                 <div className="grid grid-cols-2 gap-y-8 gap-x-4 mb-10">
                                     <div>
                                         <p className="label-text">Risk Value</p>
-                                        <p className="text-lg font-medium text-neutral-300">{fmtMoney(results.targetRisk)}</p>
+                                        <p className="text-lg font-medium text-gray-700 dark:text-neutral-300 transition-colors">{fmtMoney(results.targetRisk)}</p>
                                     </div>
                                     <div>
                                         <p className="label-text">Reward Ratio</p>
-                                        <p className="text-lg font-medium text-neutral-300">1 : {results.rr.toFixed(2)}</p>
+                                        <p className="text-lg font-medium text-gray-700 dark:text-neutral-300 transition-colors">1 : {results.rr.toFixed(2)}</p>
                                     </div>
                                 </div>
 
-                                <div className="h-[1px] w-full bg-neutral-800 mb-8"></div>
+                                <div className="h-[1px] w-full bg-gray-200 dark:bg-neutral-800 mb-8 transition-colors"></div>
 
                                 <div className="space-y-6">
                                     <div className="flex justify-between items-end">
                                         <div>
                                             <p className="label-text">SL Distance</p>
-                                            <p className="text-sm text-white">{results.slPips.toFixed(1)} pips</p>
+                                            <p className="text-sm text-gray-600 dark:text-white transition-colors">{results.slPips.toFixed(1)} pips</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-lg font-mono text-white">-{fmtMoney(results.netSL)}</p>
+                                            <p className="text-lg font-mono text-gray-900 dark:text-white transition-colors">-{fmtMoney(results.netSL)}</p>
                                         </div>
                                     </div>
 
                                     <div className="flex justify-between items-end">
                                         <div>
                                             <p className="label-text">TP Distance</p>
-                                            <p className="text-sm text-white">{results.tpPips.toFixed(1)} pips</p>
+                                            <p className="text-sm text-gray-600 dark:text-white transition-colors">{results.tpPips.toFixed(1)} pips</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-lg font-mono text-white">+{fmtMoney(results.netTP)}</p>
+                                            <p className="text-lg font-mono text-gray-900 dark:text-white transition-colors">+{fmtMoney(results.netTP)}</p>
                                         </div>
                                     </div>
                                 </div>
